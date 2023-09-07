@@ -14,4 +14,5 @@
 int ends_with_c(const char * string); 
 int ends_with_star_c(const char * string); 
 
+int contains(const char * haystack, const char * needle); 
 #endif

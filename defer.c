@@ -33,14 +33,21 @@ int main(int argc, char ** argv)
     }
 
 
-    FILE * fptr = fopen(COMPILE_FILE, "r"); 
+    FILE * fptr = fopen(COMPILE_FILE, "r");
+    temp = fptr.read(); 
 
-     
+    if ( 
 
+    fclose(fptr); 
 
-    fclose(fptr);
-
-
+    FILE * compiler_fptr = popen(temp);  
+    
+    temp = realloc(temp, sizeof(char) * 1024); 
+    
+    while (fgets(temp, sizeof(temp), compiler_fptr) != NULL)
+    {
+        printf("%s", temp); 
+    } 
 
     printf("\n\nErrors from defer:\n%s", err_string);  
     
@@ -93,5 +100,21 @@ int ends_with_star_c(const char * string)
 
         return (test_1 || test_2); 
     }
+}
+
+
+int contains(const char * haystack, const char * needle)
+{
+
+    int needle_len = strlen(needle); 
+
+    
+    for (int i = 0; i < strlen(haystack) - ; i++)
+    {
+        
+    }
+
+    
+    return 0; 
 }
 
