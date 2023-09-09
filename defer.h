@@ -12,10 +12,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct pair
+{
+    int first; 
+    int second; 
+} pair; 
+
+typedef struct location_info
+{
+    pair * scope; 
+    int * defer; 
+    int defer_size; 
+    int scope_size; 
+} location_info; 
+
 void single_file(const char *); 
 void multiple_files(const char *);
 void revert_single(const char *); 
 void revert_multiple(const char *); 
+void find_scope_and_defer(const char *, location_info *); 
+void substitute_defer(const char *, location_info *); 
 int ends_with(const char *, const char *); 
 unsigned int get_file_size(FILE *); 
 

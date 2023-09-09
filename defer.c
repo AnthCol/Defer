@@ -96,10 +96,46 @@ void single_file (const char * file)
     char * buffer = malloc(size * 2); 
     fread(buffer, sizeof(char), size, fptr); 
 
+    location_info locations;
+    locations.scope = malloc(1); 
+    locations.defer = malloc(1); 
     
+    find_scope_and_defer(buffer, &locations); 
+    substitute_defer(buffer, &locations); 
 
-
+    free(buffer); 
+    free(locations.scope); 
+    free(locations.defer); 
     fclose(fptr); 
+    return; 
+}
+
+void find_scope_and_defer(const char * buffer, location_info * locations)
+{
+    const char delimiter[2] = "\n"; 
+    char * token; 
+
+    
+    int * open; 
+    int * close; 
+
+    token = strtok(buffer, delimiter); 
+
+    while (token != NULL)
+    {
+        printf("%s\n", token); 
+
+
+        token = strtok(NULL, delimiter); 
+    }
+
+
+    return; 
+}
+
+void substitute_defer(const char * buffer, location_info * locations)
+{
+
     return; 
 }
 
