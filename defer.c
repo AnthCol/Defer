@@ -9,19 +9,16 @@ int main(int argc, char ** argv)
 
     for (int i = 1; i < argc; i++)
     { 
-        if (ends_with_star_c(argv[i]))
+        if (ends_with(argv[i], "*.c") || ends_with(argv[i], "*.cc")) 
         {
             /*
                 Go into system and generate file list of all the .c files in that directory. 
                 Add them to a list and process one by one. 
             */
         }
-        else if (ends_with_c(argv[i]))
+        else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
         {
 
-           /*
-                Open and parse that specific file.  
-           */ 
         }
         else
         {
@@ -34,12 +31,27 @@ int main(int argc, char ** argv)
 
 
     FILE * fptr = fopen(COMPILE_FILE, "r");
-    temp = fptr.read(); 
-
-    if ( 
-
+    fseek(fptr, 0L, SEEK_END); 
+    unsigned int size = ftell(fptr); 
+    temp = realloc(temp, size * 2); 
+    fseek(fptr, 0L, SEEK_SET); 
+    fread(temp, sizeof(char), size, fptr);  
     fclose(fptr); 
 
+    if (strcasestr(temp, "sudo") == NULL)
+    {
+        printf("Compile command contains \"sudo\", exiting program for safety reasons.\n"); 
+        free(err_string); 
+        free(temp); 
+        return 0;  
+    }
+
+    /*
+        Check if sudo is found anywhere in the string. 
+        If it is, terminate the program, since that should not be used to compile it and is
+        dangerous. 
+    */ 
+    
     FILE * compiler_fptr = popen(temp);  
     
     temp = realloc(temp, sizeof(char) * 1024); 
@@ -57,63 +69,22 @@ int main(int argc, char ** argv)
     return 0; 
 }
 
-
-int ends_with_c(const char * string)
-{   
-    int len = strlen(string);  
-
-    if (len < 3)
-    {
-        return 0;
-    }
-    else
-    {
-        int test_1 = (string[len - 2] == '.' && string[len - 1] == 'c'); 
-        int test_2 = 0; 
-        
-        if (len > 3)
-        {
-            (string[len - 3] == '.' && string[len - 2] == 'c' && string[len - 1] == 'c');  
-        }
-        
-        return (test_1 || test_2);      
-    }
-}
-
-int ends_with_star_c(const char * string)
+int ends_with(const char * string, const char * end)
 {
     int len = strlen(string); 
-    
-    if (len < 3)
-    {
-        return 0; 
-    }
-    else
-    {
-        int test_1 = (string[len - 3] == '*' && string[len - 2] == '.' && string[len - 1] == 'c'); 
-        int test_2 = 0; 
+    int end_len = strlen(end); 
 
-        if (len > 3)
+    if (end_len <= len)
+    {
+        for (int i = end_len - 1; i >= 0; i--)
         {
-            test_2 = (string[len - 4] == '*' && string[len - 3] == '.' && string[len - 2] == 'c' && string[len - 1] == 'c'); 
+            if (string[i] != end[i])
+            {
+                return 0; 
+            }
         }
-
-        return (test_1 || test_2); 
+        return 1; 
     }
-}
-
-
-int contains(const char * haystack, const char * needle)
-{
-
-    int needle_len = strlen(needle); 
-
-    
-    for (int i = 0; i < strlen(haystack) - ; i++)
-    {
-        
-    }
-
     
     return 0; 
 }

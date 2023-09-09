@@ -1,6 +1,7 @@
 #ifndef DEFER_H 
 #define DEFER_H
 
+#define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #define RED "\033[31m"
 #define DEFAULT "\033[39m"
@@ -11,8 +12,6 @@
 #include <string.h>
 #include <unistd.h>
 
-int ends_with_c(const char * string); 
-int ends_with_star_c(const char * string); 
+int ends_with(const char *, const char *); 
 
-int contains(const char * haystack, const char * needle); 
 #endif
