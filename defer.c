@@ -20,7 +20,7 @@ int main(int argc, char ** argv)
         }
         else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
         {
-            printf("second path taken\n"); 
+
         }
         else
         {
@@ -32,6 +32,7 @@ int main(int argc, char ** argv)
     }
     if (err_count > 1)
     {
+        printf("\n\n%sERRORS FROM DEFER:%s\n\n%s\n", PURPLE, DEFAULT, err_string);
         printf("%s", err_string); 
         free(err_string); 
         free(temp); 
@@ -47,37 +48,50 @@ int main(int argc, char ** argv)
     fread(temp, sizeof(char), size, fptr);  
     fclose(fptr); 
 
-    if (strcasestr(temp, "sudo") != NULL)
+    if (strcasestr(temp, "sudo") != NULL || strcasestr(temp, "rm") != NULL)
     {
-        printf("Compile command contains \"sudo\", exiting program for safety reasons.\n"); 
+        printf("Compile command contains \"sudo\" and/or \"rm\", exiting program for safety reasons.\n"); 
         free(err_string); 
         free(temp); 
         return 0;  
     }
     
-    // FIXME find a better way to do this, it's unsafe. 
-    system(temp); 
+    FILE * compile_process = popen(temp, "r"); 
+    char buf [256]; 
+    while (fgets(buf, sizeof(buf), compile_process))
+    {
+        printf("%s", buf); 
+    } 
+    pclose(compile_process); 
+    free(temp); 
+
 
     return 0; 
 }
+
+
 
 int ends_with(const char * string, const char * end)
 {
     int len = strlen(string); 
     int end_len = strlen(end); 
 
-    printf("%s %s\n", string, end); 
-
-
     if (end_len <= len)
     {
-        for (int i = end_len - 1; i >= 0; i--)
+        len -= 1; 
+        end_len -= 1; 
+
+        while (end_len >= 0)
         {
-            if (string[i] != end[i])
+            if (string[len] != end[end_len])
             {
                 return 0; 
             }
-        }
+
+            len -= 1; 
+            end_len -= 1; 
+        } 
+        
         return 1; 
     }
     
