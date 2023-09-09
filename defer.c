@@ -11,6 +11,8 @@ int main(int argc, char ** argv)
     { 
         if (ends_with(argv[i], "*.c") || ends_with(argv[i], "*.cc")) 
         {
+
+            printf("first path taken\n"); 
             /*
                 Go into system and generate file list of all the .c files in that directory. 
                 Add them to a list and process one by one. 
@@ -18,7 +20,7 @@ int main(int argc, char ** argv)
         }
         else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
         {
-
+            printf("second path taken\n"); 
         }
         else
         {
@@ -27,6 +29,13 @@ int main(int argc, char ** argv)
             err_string = realloc(err_string, sizeof(char) * (100 * err_count)); 
             strcat(err_string, temp);  
         }
+    }
+    if (err_count > 1)
+    {
+        printf("%s", err_string); 
+        free(err_string); 
+        free(temp); 
+        return 0;
     }
 
 
@@ -38,33 +47,16 @@ int main(int argc, char ** argv)
     fread(temp, sizeof(char), size, fptr);  
     fclose(fptr); 
 
-    if (strcasestr(temp, "sudo") == NULL)
+    if (strcasestr(temp, "sudo") != NULL)
     {
         printf("Compile command contains \"sudo\", exiting program for safety reasons.\n"); 
         free(err_string); 
         free(temp); 
         return 0;  
     }
-
-    /*
-        Check if sudo is found anywhere in the string. 
-        If it is, terminate the program, since that should not be used to compile it and is
-        dangerous. 
-    */ 
     
-    FILE * compiler_fptr = popen(temp);  
-    
-    temp = realloc(temp, sizeof(char) * 1024); 
-    
-    while (fgets(temp, sizeof(temp), compiler_fptr) != NULL)
-    {
-        printf("%s", temp); 
-    } 
-
-    printf("\n\nErrors from defer:\n%s", err_string);  
-    
-    free(err_string); 
-    free(temp); 
+    // FIXME find a better way to do this, it's unsafe. 
+    system(temp); 
 
     return 0; 
 }
@@ -73,6 +65,9 @@ int ends_with(const char * string, const char * end)
 {
     int len = strlen(string); 
     int end_len = strlen(end); 
+
+    printf("%s %s\n", string, end); 
+
 
     if (end_len <= len)
     {
