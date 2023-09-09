@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+void single_file(const char *); 
+void multiple_files(const char *);
+void revert_single(const char *); 
+void revert_multiple(const char *); 
 int ends_with(const char *, const char *); 
+unsigned int get_file_size(FILE *); 
 
 #endif

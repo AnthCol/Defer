@@ -12,7 +12,7 @@ The header file contains the following:
 ```
 so you must make sure you have a machine capable of using these things. 
 
-If you do, use your compiler to compile the defer.c file into an executable, for example:
+If you do, use your compiler to compile the defer.c file into an executable (makefile is provided), for example:
 ```
 gcc defer.c -o defer
 ```

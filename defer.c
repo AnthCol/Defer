@@ -11,16 +11,11 @@ int main(int argc, char ** argv)
     { 
         if (ends_with(argv[i], "*.c") || ends_with(argv[i], "*.cc")) 
         {
-
-            printf("first path taken\n"); 
-            /*
-                Go into system and generate file list of all the .c files in that directory. 
-                Add them to a list and process one by one. 
-            */
+            //multiple_files(argv[i]); 
         }
         else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
         {
-
+            //single_file(argv[i]); 
         }
         else
         {
@@ -40,21 +35,29 @@ int main(int argc, char ** argv)
     }
 
 
-    FILE * fptr = fopen(COMPILE_FILE, "r");
-    fseek(fptr, 0L, SEEK_END); 
-    unsigned int size = ftell(fptr); 
-    temp = realloc(temp, size * 2); 
-    fseek(fptr, 0L, SEEK_SET); 
+    FILE * fptr = fopen(COMPILE_FILE, "r"); 
+    unsigned int size = get_file_size(fptr); 
+    temp = realloc(temp, size * 2);
     fread(temp, sizeof(char), size, fptr);  
     fclose(fptr); 
 
-    if (strcasestr(temp, "sudo") != NULL || strcasestr(temp, "rm") != NULL)
+    if (strcasestr(temp, " sudo ") != NULL || strcasestr(temp, " rm ") != NULL)
     {
-        printf("Compile command contains \"sudo\" and/or \"rm\", exiting program for safety reasons.\n"); 
-        free(err_string); 
-        free(temp); 
-        return 0;  
-    }
+        printf("Compile command contains \"sudo\" and/or \"rm\". Are you sure you want to proceed? (y/n) > "); 
+        char c; 
+        scanf("%c", &c); 
+        while (c != 'y' && c != 'n')
+        {
+            printf("(y/n) > "); 
+            scanf("%c", &c); 
+        }
+        if (c == 'n')
+        {
+            free(err_string); 
+            free(temp); 
+            return 0;   
+        }
+   }
     
     FILE * compile_process = popen(temp, "r"); 
     char buf [256]; 
@@ -65,12 +68,60 @@ int main(int argc, char ** argv)
     pclose(compile_process); 
     free(temp); 
 
-    // Now need to reverse the 
+    for (int i = 1; i < argc; i++)
+    {
+        if (ends_with(argv[i], "*.c") || ends_with(argv[i], "*.cc")) 
+        {
+            revert_multiple(argv[i]); 
+        }
+        else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
+        {
+            revert_single(argv[i]); 
+        } 
+    } 
 
     return 0; 
 }
 
+void single_file (const char * file)
+{
+    FILE * fptr = fopen(file); 
+    if (fptr == NULL)
+    {
+        printf("%sCould not open file:%s%s\n", RED, DEFAULT, file); 
+        return; 
+    }
 
+    unsigned int size = get_file_size(fptr); 
+    char * buffer = malloc(size * 2); 
+    fread(buffer, sizeof(char), size, fptr); 
+
+    
+
+
+    fclose(fptr); 
+    return; 
+}
+
+void multiple_files(const char * files)
+{
+
+
+
+    return; 
+}
+
+void revert_single(const char * file)
+{
+
+    return;    
+}
+
+void revert_multiple(const char * files)
+{
+
+    return; 
+}
 
 int ends_with(const char * string, const char * end)
 {
@@ -99,3 +150,11 @@ int ends_with(const char * string, const char * end)
     return 0; 
 }
 
+unsigned int get_file_size(FILE * fptr)
+{
+    unsigned int size; 
+    fseek(fptr, 0L, SEEK_END); 
+    size = ftell(fptr); 
+    fseek(fptr, 0L, SEEK_SET);
+    return size; 
+}
