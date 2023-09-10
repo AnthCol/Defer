@@ -123,9 +123,27 @@ void single_file (const char * file, revert_info * revert, int file_num)
     locations.scope = malloc(1); 
     locations.defer = malloc(1); 
     
-    find_scope_and_defer(buffer, &locations); 
-    substitute_defer(buffer, &locations); 
+    int check = find_scope_and_defer(buffer, &locations); 
 
+    if (check != 0)
+    {   
+        if (check > 0)
+        {
+            printf("%sToo many closing braces in file: %s%s\n", RED, file, DEFAULT);  
+        }
+        else if (check > 0)
+        {
+            printf("%sToo many opening braces in file: %s%s\n", RED, file, DEFAULT);  
+        }
+
+        free(locations.scope); 
+        free(locations.defer); 
+        free(buffer); 
+        fclose(fptr); 
+        return; 
+    }
+
+    substitute_defer(buffer, &locations); 
     
     for (int i = 0; i < defer_size; i++)
     {
@@ -138,7 +156,7 @@ void single_file (const char * file, revert_info * revert, int file_num)
     return; 
 }
 
-void find_scope_and_defer(const char * buffer, location_info * locations)
+int find_scope_and_defer(const char * buffer, location_info * locations)
 {
     const char delimiter[2] = "\n"; 
     char * token; 
@@ -185,8 +203,10 @@ void find_scope_and_defer(const char * buffer, location_info * locations)
 
             if (opening_index < 0)
             {
-                printf("%sToo many closing braces.%s\n", RED, DEFAULT); 
+                free(open); 
+                return opening_index; 
             }
+
             locations.scope_size += 1; 
             locations.scope = realloc(locations.scope, sizezof(pair) * locations.scope_size); 
             locations.scope[locations.scope_size - 1].first = open[opening_index];
@@ -198,8 +218,7 @@ void find_scope_and_defer(const char * buffer, location_info * locations)
     }
 
     free(open); 
-    free(close);
-    return; 
+    return opening_index; 
 }
 
 int check_defer_syntax(const char * defer_token)
