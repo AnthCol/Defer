@@ -29,3 +29,19 @@ Then, run the program with C files as command line arguments. For example:
     <li>Currently it will only work with functions that take singular arguments. Add support for multi-argument functions in the future. </li>
 </ul>
 
+# Flaws
+
+One of the major flaws (although not one that would come up often if one was adhering to good
+code style) is that the program will not be able to handle something like this:
+```
+defer(free, arr1); defer(free, arr2); printf("test\n"); defer(free, arr3); 
+```
+For this program to work correctly, the defer "function call" must be on it's own line. 
+
+
+It currently is also unable to handle something like this:
+```
+for (int i = 0; i < 10; i++) { if (i < 5) { printf("%s\n", temp); }}
+```
+In short, braces on the same line will not work because of the way I chose to parse the lines. 
+It will work fine provided opening and closing braces are all on different lines.
