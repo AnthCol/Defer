@@ -81,7 +81,9 @@ int main(int argc, char ** argv)
     {
         if (ends_with(argv[i], "*.c") || ends_with(argv[i], "*.cc")) 
         {
-            revert_multiple(argv[i], revert, file_num); 
+            /*
+                search through directory again and revert files one at a time 
+            */
         }
         else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
         {
@@ -103,6 +105,7 @@ int main(int argc, char ** argv)
 void modify_file(const char * file, revert_info * revert, int file_num)
 {
     FILE * fptr = fopen(file); 
+
     if (fptr == NULL)
     {
         printf("%sCould not open file:%s%s\n", RED, DEFAULT, file); 
@@ -136,17 +139,30 @@ void find_scopes(const char * buffer, pair * scopes)
     const char delimiter[2] = "\n"; 
     char * token; 
     char * pointer; 
+    int * open = malloc(1);     
+    int open_index = 0;  
     int line_number = 1; 
+
 
     token = strtok(buffer, delimiter); 
 
     while (token != NULL)
     {
 
+        if (strstr(token, "{") != NULL)
+        {
+            
+        }   
+        else if (strstr(token, "}") != NULL)
+        {
+
+        } 
+
         line_number += 1; 
         token = strtok(NULL, delimiter);
     }    
 
+    free(open); 
     return; 
 }
 
