@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
     return 0; 
 }
 
-void single_file (const char * file, revert_info * revert, int file_num)
+void modify_file(const char * file, revert_info * revert, int file_num)
 {
     FILE * fptr = fopen(file); 
     if (fptr == NULL)
@@ -119,59 +119,48 @@ void single_file (const char * file, revert_info * revert, int file_num)
     strcpy(revert[file_num - 1].filename, file); 
     strcpy(revert[file_num - 1].content, buffer); 
 
-    locatiion_info locations; 
-    locations.scope = malloc(1); 
-    locations.defer = malloc(1); 
-    
-    int check = find_scope_and_defer(buffer, &locations); 
 
-    if (check != 0)
-    {   
-        if (check > 0)
-        {
-            printf("%sToo many closing braces in file: %s%s\n", RED, file, DEFAULT);  
-        }
-        else if (check > 0)
-        {
-            printf("%sToo many opening braces in file: %s%s\n", RED, file, DEFAULT);  
-        }
+    pair * scopes = malloc(1); 
 
-        free(locations.scope); 
-        free(locations.defer); 
-        free(buffer); 
-        fclose(fptr); 
-        return; 
-    }
+    find_scopes(buffer, scopes); 
+    find_and_replace_defer(buffer, scopes); 
 
-    substitute_defer(buffer, &locations); 
-    
-    for (int i = 0; i < defer_size; i++)
-    {
-        free(locations.defer[i].instruction); 
-    }
-    free(locations.defer); 
-    free(locations.scope); 
     free(buffer); 
+    free(scopes); 
     fclose(fptr); 
     return; 
 }
 
-int find_scope_and_defer(const char * buffer, location_info * locations)
+void find_scopes(const char * buffer, pair * scopes)
 {
     const char delimiter[2] = "\n"; 
     char * token; 
     char * pointer; 
+    int line_number = 1; 
 
     token = strtok(buffer, delimiter); 
 
-    int * open = malloc(1); 
-    int line_number = 1; 
-
-
     while (token != NULL)
     {
-        printf("%s", token); 
 
+        line_number += 1; 
+        token = strtok(NULL, delimiter);
+    }    
+
+    return; 
+}
+
+void find_and_replace_defer(const char * buffer, pair * scopes)
+{
+    const char delimiter[2] = "\n"; 
+    char * token; 
+    char * pointer; 
+    int line_number = 1; 
+
+    token = strtok(buffer, delimiter); 
+
+    while(token != NULL)
+    {
         strip_whitespace(token); 
         pointer = strstr(token, "defer("); 
 
@@ -179,46 +168,18 @@ int find_scope_and_defer(const char * buffer, location_info * locations)
         {
             if (check_defer_syntax(pointer))
             {
-                locations.defer_size += 1; 
-                locations.defer = realloc(sizeof(defer_location) * locatons.defer_size); 
-                locations.defer[defer_size - 1].line = line_number; 
+                /*
+                    FIXME
+                    Search through scopes and swap out buffer where necessary. 
+                */
             }
-            else
-            {
-                printf("%sDefer syntax on line %d is incorrect.%s\n", RED, line_number, DEFAULT); 
-            }
-        }
-
-        // check for opening and closing braces. 
-        if (strstr(token, "{") != NULL)
-        {
-            opening_index += 1; 
-            open = realloc(open, sizeof(int) * opening_index); 
-            open[opening_index] = line_number; 
-             
-        }
-        else if (strstr(token, "}") != NULL)
-        {   
-            opening_index -= 1; 
-
-            if (opening_index < 0)
-            {
-                free(open); 
-                return opening_index; 
-            }
-
-            locations.scope_size += 1; 
-            locations.scope = realloc(locations.scope, sizezof(pair) * locations.scope_size); 
-            locations.scope[locations.scope_size - 1].first = open[opening_index];
-            locations.scope[locations.scope_size - 1].second = line_number; 
         }
 
         line_number += 1; 
         token = strtok(NULL, delimiter); 
     }
 
-    free(open); 
-    return opening_index; 
+    return; 
 }
 
 int check_defer_syntax(const char * defer_token)
@@ -254,19 +215,6 @@ void strip_whitespace(char * token)
 
     strcpy(token, temp); 
     free(temp); 
-    return; 
-}
-
-void scan_braces(const char * token, int * open, int * close, int line_number)
-{
-    
-
-    return;
-}
-
-void substitute_defer(const char * buffer, location_info * locations)
-{
-
     return; 
 }
 

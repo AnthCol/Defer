@@ -19,35 +19,18 @@ typedef struct pair
     int second; 
 } pair; 
 
-typedef struct defer_location
-{
-    char * instruction;
-    int line; 
-} defer_location; 
-
-typedef struct location_info
-{
-    pair * scope; 
-    defer_location * defer; 
-    int defer_size; 
-    int scope_size; 
-} location_info; 
-
 typedef struct revert_info
 {
     char * filename; 
     char * content; 
 } revert_info; 
 
-void single_file(const char *); 
-void multiple_files(const char *);
-void revert_single(const char *); 
-void revert_multiple(const char *); 
-void substitute_defer(const char *, location_info *); 
+void modify_file(const char *); 
+void revert_file(const char *); 
 void strip_whitespace(char *); 
+void find_scopes(const char *, pair *); 
+void find_and_replace_defer(const char *, pair *);
 int ends_with(const char *, const char *); 
-int check_defer_syntax(const char *); 
-int find_scope_and_defer(const char *, location_info *); 
 unsigned int get_file_size(FILE *); 
 
 #endif
