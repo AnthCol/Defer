@@ -115,7 +115,6 @@ void find_scope_and_defer(const char * buffer, location_info * locations)
     const char delimiter[2] = "\n"; 
     char * token; 
 
-    
     int * open; 
     int * close; 
 
@@ -142,8 +141,6 @@ void substitute_defer(const char * buffer, location_info * locations)
 void multiple_files(const char * files)
 {
 
-
-
     return; 
 }
 
@@ -161,29 +158,25 @@ void revert_multiple(const char * files)
 
 int ends_with(const char * string, const char * end)
 {
-    int len = strlen(string); 
-    int end_len = strlen(end); 
+    int len = strlen(string) - 1; 
+    int end_len = strlen(end) - 1; 
 
     if (end_len <= len)
     {
+       return 0;  
+    }
+
+    while (end_len >= 0)
+    {
+        if (string[len] != end[end_len])
+        {
+            return 0; 
+        }
         len -= 1; 
         end_len -= 1; 
-
-        while (end_len >= 0)
-        {
-            if (string[len] != end[end_len])
-            {
-                return 0; 
-            }
-
-            len -= 1; 
-            end_len -= 1; 
-        } 
+    } 
         
-        return 1; 
-    }
-    
-    return 0; 
+    return 1; 
 }
 
 unsigned int get_file_size(FILE * fptr)
