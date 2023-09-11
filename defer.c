@@ -10,14 +10,46 @@ int main(int argc, char ** argv)
 
     revert_info * revert = malloc(1); 
 
+    /*
+        FIXME
+        Make it be able to handle just a star. 
+        If the user inputs ** have the program crawl through all the directories 
+        and do every single .c or .cc file. 
+        This way they won't need to specify each file. 
+    */
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (!ends_with(argv[i], "*.c") && !ends_with(argv[i], "*.cc") && 
+            !ends_with(argv[i], ".c")  && !ends_with(argv[i], ".cc"))
+        {
+            printf("%sARGUMENT %d (%s) INVALID. Not a .c or .cc file.\n%s", RED, i, argv[i], DEFAULT);
+        } 
+    }
+
+    if (err_count > 0)
+    {
+        printf("\n%sOnly add C files and run the program again.%s\n", RED, DEFAULT); 
+        free(err_string); 
+        free(revert);  
+        free(temp); 
+        return 0; 
+    }
+
+
+    /*
+        Revert info here needs to 
+        be loaded with each file.
+        Both filname as well as the content, so when 
+        each file is read it will be loaded. 
+
+    */
     for (int i = 1; i < argc; i++)
     { 
         if (ends_with(argv[i], "*.c") || ends_with(argv[i], "*.cc")) 
         {
             /*
                 Loop and call single file. 
-
-            
             */
         }
         else if (ends_with(argv[i], ".c") || ends_with(argv[i], ".cc"))
@@ -25,24 +57,7 @@ int main(int argc, char ** argv)
             file_num += 1; 
             //single_file(argv[i]); 
         }
-        else
-        {
-            err_count += 1; 
-            sprintf(temp, "%sARGUMENT %d (%s) INVALID. Not a .c or .cc file.\n%s", RED, i, argv[i], DEFAULT); 
-            err_string = realloc(err_string, sizeof(char) * (100 * err_count)); 
-            strcat(err_string, temp);  
-        }
     }
-
-    if (err_count > 1)
-    {
-        printf("\n\n%sERRORS FROM DEFER:%s\n\n%s\n", PURPLE, DEFAULT, err_string);
-        printf("%s", err_string); 
-        free(err_string); 
-        free(temp);  
-        return 0;
-    }
-
 
     FILE * fptr = fopen(COMPILE_FILE, "r"); 
     unsigned int size = get_file_size(fptr); 
@@ -122,19 +137,29 @@ void modify_file(const char * file, revert_info * revert, int file_num)
     strcpy(revert[file_num - 1].filename, file); 
     strcpy(revert[file_num - 1].content, buffer); 
 
+    scope_struct scope;  
+    scope.pairs = malloc(1); 
+    scope.count = 0; 
 
-    pair * scopes = malloc(1); 
+    int check = find_scopes(buffer, &scope); 
 
-    find_scopes(buffer, scopes); 
-    find_and_replace_defer(buffer, scopes); 
+    if (check != 0)
+    {
+        printf("%sOpening and closing braces do not match in file: %s%s\n", RED, file, DEFAULT); 
+        free(buffer); 
+        free(scope.pairs); 
+        fclose(fptr); 
+    }
+
+    find_and_replace_defer(buffer, &scope); 
 
     free(buffer); 
-    free(scopes); 
+    free(scope.pairs); 
     fclose(fptr); 
     return; 
 }
 
-void find_scopes(const char * buffer, pair * scopes)
+int find_scopes(const char * buffer, scope_struct * scope)
 {
     const char delimiter[2] = "\n"; 
     char * token; 
@@ -143,7 +168,6 @@ void find_scopes(const char * buffer, pair * scopes)
     int open_index = 0;  
     int line_number = 1; 
 
-
     token = strtok(buffer, delimiter); 
 
     while (token != NULL)
@@ -151,29 +175,51 @@ void find_scopes(const char * buffer, pair * scopes)
 
         if (strstr(token, "{") != NULL)
         {
-            
+            open_index += 1; 
+            open = realloc(open, sizeof(int) * open_index); 
+            open[open_index - 1] = line_number; 
         }   
         else if (strstr(token, "}") != NULL)
         {
+            open_index -= 1; 
+            scope->count += 1; 
+            scope->pairs = realloc(sizeof(pair) * scope->count); 
+            scope->pairs[scope->count - 1].first = open[open_index]; 
+            scope->pairs[scope->count - 1].second = line_number; 
 
+            open = realloc(open, sizeof(int) * open_index); 
         } 
 
         line_number += 1; 
         token = strtok(NULL, delimiter);
     }    
 
-    free(open); 
-    return; 
+    free(open);
+
+    return (open_index == 0); 
 }
 
-void find_and_replace_defer(const char * buffer, pair * scopes)
+void find_and_replace_defer(const char * buffer, scope_struct * scope)
 {
     const char delimiter[2] = "\n"; 
     char * token; 
     char * pointer; 
+    int line_count = 0; 
     int line_number = 1; 
+    int ending_line; 
+
+    char ** lines = malloc(1); 
 
     token = strtok(buffer, delimiter); 
+
+    while (token != NULL)
+    {
+        line_count += 1; 
+        lines = realloc(lines, sizeof(char*) * line_count); 
+        lines[line_count - 1] = malloc(sizeof(char) * strlen(token) + 1); 
+        strcpy(lines[line_count - 1], token); 
+        token = strtok(NULL, delimiter); 
+    }
 
     while(token != NULL)
     {
@@ -184,10 +230,15 @@ void find_and_replace_defer(const char * buffer, pair * scopes)
         {
             if (check_defer_syntax(pointer))
             {
-                /*
-                    FIXME
-                    Search through scopes and swap out buffer where necessary. 
-                */
+                ending_line = end_of_scope(line_number, scope);                 
+                if (ending_line == -1)
+                {
+                    printf("%sDefer call on line %d is not within any scope%s\n", RED, line_number, DEFAULT); 
+                }
+                else
+                {
+                    
+                }
             }
         }
 
@@ -195,17 +246,47 @@ void find_and_replace_defer(const char * buffer, pair * scopes)
         token = strtok(NULL, delimiter); 
     }
 
+    for (int i = 0; i < line_count; i++)
+    {
+        free(lines[i]); 
+    } 
+    free(lines); 
     return; 
 }
 
+int end_of_scope(int line_number, scope_struct * scope)
+{
+    int index = -1;  
+    for (int i = 0; i < scope->count; i++)
+    {
+        if (line_number > scope->pairs[i].first && 
+            line_number < scope->pairs[i].second)
+        {
+            if (index != -1)
+            {
+               /*
+                Check if it's within a smaller scope
+                If it is, update the index variable with 
+                the more appropriate index 
+               */ 
+            }
+            else
+            {
+                index = i; 
+            }
+        }
+    }
+
+    return (index == -1) ? -1 : scope->pairs[index].second; 
+}
+
+
 int check_defer_syntax(const char * defer_token)
 {
-
-    for (int i = 0; i < strlen(defer_token); i++)
+    for (int i = 0; i < (int)strlen(defer_token); i++)
     {
 
     }
-
     return 1; 
 }
 
@@ -219,7 +300,7 @@ void strip_whitespace(char * token)
     }
 
     int x = 0; 
-    for (int i = 0; i < strlen(token); i++)
+    for (int i = 0; i < (int)strlen(token); i++)
     {
         if (!isspace(token[i]))
         {
@@ -234,8 +315,18 @@ void strip_whitespace(char * token)
     return; 
 }
 
-void revert_single(const char * file)
+void revert_file(const char * filename, revert_info * revert, int file_count)
 {
+    for (int i = 0; i < file_count; i++)
+    {
+        if (strcmp(filename, revert[file_count].filename) == 0)
+        {
+            FILE * fptr = fopen(filename, "w"); 
+            fprintf(fptr, "%s", revert[file_count].content); 
+            fclose(fptr); 
+            break; 
+        }
+    }
 
     return;    
 }
