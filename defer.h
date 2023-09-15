@@ -7,13 +7,13 @@
 #define RED "\033[31m"
 #define PURPLE "\033[35m"
 #define DEFAULT "\033[39m"
-#define COMPILE_FILE "command.defer"
+#define SEARCH_COMMAND "find . -type f -name '*.c'"
+#define COMPILE_FILE "compile.defer"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-
 
 typedef struct revert_pair
 { 
@@ -24,8 +24,9 @@ typedef struct revert_pair
 int ends_with(const char *, const char *); 
 int already_processed(revert_pair *, const char *, int); 
 int get_file_size(FILE *); 
+void save_original_file(revert_pair *, const char *, int *); 
 void copy_file_data(FILE *, const char *, revert_pair *, int); 
-void * modify_file(void * ); 
-void * revert_file(void * ); 
+void * modify_file(void *); 
+void * revert_file(void *); 
 
 #endif

@@ -10,37 +10,25 @@ int main(int argc, char ** argv)
     char * temp = malloc(1);
     revert_pair * original_data = malloc(1); 
 
-
-    
-    if (strcmp(argv[1], "**") == 0)
+    if (strcmp(argv[1], "all") == 0 || strcmp(argv[1], "ALL") == 0)
     {
-        /*
-            In this case, search all subdirectories from
-            the current directory and make the list of files. 
-        */
+        FILE * search_process = popen(SEARCH_COMMAND, "r"); 
+        while (fgets(buf, sizeof(buf), search_process) != NULL)
+        {
+            save_original_file(original_data, buf, &file_count); 
+        }
+        pclose(search_process); 
     }
     else
     {
         for (int i = 1; i < argc; i++)
         {
-
-            if (!already_processed(original_data, argv[i], file_count))
-            {     
-                fptr = fopen(argv[i], "r"); 
-                if (fptr == NULL)
-                {
-                    printf("%sCould not open file:%s %s\n", RED, DEFAULT, argv[i]); 
-                }
-                else
-                {
-                    copy_file_data(fptr, argv[i], original_data, file_count); 
-                    file_count += 1; 
-                    fclose(fptr); 
-                }
-            }
+            save_original_file(original_data, argv[i], &file_count); 
         }
     }
 
+    printf("yo\n"); 
+    exit(1); 
 
     pthread_t * thread_handles; 
     thread_handles = malloc(file_count * sizeof(pthread_t)); 
@@ -76,7 +64,7 @@ int main(int argc, char ** argv)
     
     for (int i = 0; i < file_count; i++)
     {
-        pthread_create(&thread_handles[i], NULL, revert_file, (void*) &original_data[i]); 
+        pthread_create(&thread_handles[i], NULL, revert_file, (void *) &original_data[i]); 
         free(original_data[i].filename); 
         free(original_data[i].contents); 
     }
@@ -90,6 +78,28 @@ int main(int argc, char ** argv)
     return 0; 
 }
 
+
+void save_original_file(revert_pair * original_data, const char * filename, int * file_count)
+{
+    if (!already_processed(original_data, filename, *file_count))
+    {     
+        FILE * fptr = fopen(filename, "r"); 
+        if (fptr == NULL)
+        {
+            printf("%sCould not open file:%s %s\n", RED, DEFAULT, filename); 
+        }
+        else
+        {
+            copy_file_data(fptr, filename, original_data, *file_count); 
+            *file_count += 1; 
+            fclose(fptr); 
+        }
+    }
+
+    return; 
+}
+
+
 void * modify_file (void * modify_data)
 {
 
@@ -100,15 +110,26 @@ void * modify_file (void * modify_data)
 
 void * revert_file (void * revert_data)
 {
-
-    FILE * fptr = fopen(revert_data.filename, "w"); 
-
-
-
-
+    FILE * fptr = fopen(((revert_pair*)revert_data)->filename, "w"); 
+    fprintf(fptr, "%s", ((revert_pair*)revert_data)->contents); 
     fclose(fptr); 
 
+    free(((revert_pair *)revert_data)->filename); 
+    free(((revert_pair *)revert_data)->contents); 
+
     return NULL;  
+}
+
+int already_processed(revert_pair * original_data, const char * filename, int file_count)
+{
+    for (int i = 0; i < file_count; i++)
+    {
+        if (strcmp(original_data[i].filename, filename) == 0)
+        {
+            return 1; 
+        } 
+    }
+    return 0; 
 }
 
 void copy_file_data(FILE * fptr, const char * filename, revert_pair * original_data, int index)
@@ -121,12 +142,19 @@ void copy_file_data(FILE * fptr, const char * filename, revert_pair * original_d
     original_data[index].filename = malloc(name_len + 1); 
     original_data[index].contents = malloc(file_len + 1); 
 
+    if (original_data[index].filename == NULL || original_data[index].contents == NULL)
+    {
+        printf("%sUnable to allocate enough memory. Free up RAM and run program again.\n%s", RED, DEFAULT); 
+        exit(1); 
+    }
+
     char * buffer = malloc(file_len + 1); 
     fread(buffer, sizeof(char), file_len, fptr); 
 
     strncpy(original_data[index].filename, filename, name_len); 
     strncpy(original_data[index].contents, buffer, file_len);
 
+    free(buffer); 
     return; 
 }
 
@@ -159,9 +187,8 @@ int ends_with(const char * string, const char * end)
 
 int get_file_size(FILE * fptr)
 {
-    int size; 
     fseek(fptr, 0L, SEEK_END); 
-    size = ftell(fptr); 
+    int size = ftell(fptr); 
     fseek(fptr, 0L, SEEK_SET); 
     return size; 
 }
