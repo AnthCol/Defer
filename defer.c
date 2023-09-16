@@ -118,31 +118,126 @@ void save_original_file(revert_pair * original_data, const char * filename, int 
 void * modify_file (void * modify_data)
 {
     FILE * fptr = fopen(((revert_pair*)modify_data)->filename, "r+"); 
-    
-    int line_counter = 0; 
-    int defer_location; 
-    int return_location; 
-    int end_brace_location; 
+
+    int line_counter = 0;     
+    int defer_counter = 0; 
+    int return_counter = 0; 
+    int start_brace_counter = 0; 
+    int end_brace_counter = 0; 
+
+    int * defer_locations = malloc(1); 
+    int * return_locations = malloc(1); 
+    int * start_brace_locations = malloc(1); 
+    int * end_brace_locations = malloc(1); 
     char buf[512]; 
 
     while (fgets(buf, sizeof(buf), fptr) != NULL)
     {
-        
-
         line_counter += 1; 
+        char * pointer; 
+        char temp[512]; 
+        strcpy(temp, buf); 
+
+        strip_whitespace(temp);
+
+        if (strncmp(buf, "return ", sizeof("return")) != 0 || strncmp(buf, "return(", sizeof("return")) != 0)
+        {   
+            return_counter += 1; 
+            return_locations = realloc(return_locations, sizeof(int) * return_counter); 
+            return_locations[return_counter - 1] = line_counter; 
+        }
+        else if (strncmp(temp, "defer(", sizeof("defer")) != 0)
+        {
+            defer_counter += 1;  
+            defer_locations = realloc(defer_locations, sizeof(int) * defer_counter); 
+            defer_locations[defer_counter - 1] = line_counter; 
+        }
+        else if (strstr(temp, "}") != NULL)
+        { 
+            end_brace_counter += 1;  
+
+        }
+        else if (strstr(temp, "{") != NULL)
+        {            
+            start_brace_counter += 1; 
+
+        }
+        //line_counter += 1; 
     }
 
-    fseek(fptr, 0L, SEEK_SET); 
-    line_counter = 0; 
 
+
+    qsort(defer_locations, defer_counter, sizeof(int), cmp_func); 
+    qsort(return_locations, return_counter, sizeof(int), cmp_func); 
+    qsort(start_brace_locations, start_brace_counter, sizeof(int), cmp_func); 
+    qsort(end_brace_locations, end_brace_counter, sizeof(int), cmp_func); 
+
+
+    if (start_brace_counter != end_brace_counter)
+    {
+        printf("%sFile does not have matching number of opening and closing braces (%s)%s\n", RED, (revert_pair*)modify_data->filename, DEFAULT); 
+        free(defer_locations); 
+        free(return_locations); 
+        free(start_brace_locations); 
+        free(end_brace_locations); 
+        return NULL; 
+    }
     
+    for (int i = 0; i < start_brace_counter; i++)
+    {
+        int location = binary_search(end_brace_locations, start_brace_counter, start_brace_locations[i]);
+
+        if (location != -1)
+        {
+            // FIXME get rid of it 
+        }
+    } 
+    
+    //fseek(fptr, 0L, SEEK_SET); 
 
 
+    /*
+        Find the closest scope ending statement for each defer location. 
+        Remove defer from the line (leaving only a newline). 
+
+        DEFER MUST BE ON IT'S OWN LINE, AS THE ENTIRE LINE WILL BE DELETED. 
+
+        After, the code will prepend the 
+    */
 
 
     fclose(fptr); 
 
+    free(defer_locations); 
+    free(return_locations); 
+    free(end_brace_locations); 
+
     return NULL; 
+}
+
+void strip_whitespace(char * string)
+{
+    char * temp = malloc(strlen(string)); 
+
+    int x = 0; 
+    for (int i = 0; i < strlen(string); i++)
+    {
+        if (!isspace(string[i]))
+        {
+            temp[x] = string[i]; 
+            x++; 
+        }
+    }
+    temp[x] = '\0';
+
+    strcpy(string, temp); 
+
+    return; 
+}
+
+int cmp_func(const void * a, const void * b)
+{
+    return ((*(int*)a) > (*(int*)b)) - ((*(int*)a) < (*(int*)b)); 
 }
 
 void * revert_file (void * revert_data)

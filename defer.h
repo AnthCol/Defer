@@ -25,6 +25,8 @@ typedef struct revert_pair
 int ends_with(const char *, const char *); 
 int already_processed(revert_pair *, const char *, int); 
 int get_file_size(FILE *); 
+int cmp_func(const void *, const void *); 
+void strip_whitespace(char *); 
 void save_original_file(revert_pair *, const char *, int *); 
 void copy_file_data(FILE *, const char *, revert_pair *, int); 
 void * modify_file(void *); 
