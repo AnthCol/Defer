@@ -10,7 +10,16 @@ int main(int argc, char ** argv)
     char * temp = malloc(1);
     revert_pair * original_data = malloc(1); 
 
-    if (strcmp(argv[1], "all") == 0 || strcmp(argv[1], "ALL") == 0)
+
+    temp = realloc(temp, strlen(argv[1]) + 1); 
+    strncpy(temp, argv[1], strlen(argv[1])); 
+
+    for (int i = 0; i < strlen(temp); i++)
+    {
+        temp[i] = toupper(temp[i]); 
+    }
+
+    if (strcmp(temp, "ALL") == 0)
     {
         FILE * search_process = popen(SEARCH_COMMAND, "r"); 
         while (fgets(buf, sizeof(buf), search_process) != NULL)
@@ -23,12 +32,16 @@ int main(int argc, char ** argv)
     {
         for (int i = 1; i < argc; i++)
         {
-            save_original_file(original_data, argv[i], &file_count); 
+            if (ends_with(argv[i], ".c"))
+            {
+                save_original_file(original_data, argv[i], &file_count);  
+            } 
+            else
+            {
+                printf("%sFile does not end with .c -> Skipping it%s (%s)\n", PURPLE, DEFAULT, argv[i]); 
+            }
         }
     }
-
-    printf("yo\n"); 
-    exit(1); 
 
     pthread_t * thread_handles; 
     thread_handles = malloc(file_count * sizeof(pthread_t)); 
@@ -43,30 +56,32 @@ int main(int argc, char ** argv)
         pthread_join(thread_handles[i], NULL); 
     }
 
-
-
     fptr = fopen(COMPILE_FILE, "r"); 
-    size = get_file_size(fptr); 
-    temp = realloc(temp, size * 2); 
-    fread(temp, sizeof(char), size, fptr); 
-    fclose(fptr); 
-
-    // FIXME verify compiling file for sudo and rm
-
-    FILE * compile_process = popen(temp, "r"); 
-    while (fgets(buf, sizeof(buf), compile_process) != NULL)
+    if (fptr == NULL)
     {
-        printf("%s", buf); 
+        printf("%sUnable to find \"compile.defer\" file for compiling. Reverting files and exiting.\n%s", PURPLE, DEFAULT); 
+    } 
+    else
+    {
+        size = get_file_size(fptr); 
+        temp = realloc(temp, size * 2); 
+        fread(temp, sizeof(char), size, fptr); 
+        fclose(fptr); 
+
+        // FIXME verify compiling file for sudo and rm
+
+        FILE * compile_process = popen(temp, "r"); 
+        while (fgets(buf, sizeof(buf), compile_process) != NULL)
+        {
+            printf("%s", buf); 
+        }
+        pclose(compile_process); 
     }
-    pclose(compile_process); 
     free(temp); 
-    
-    
+
     for (int i = 0; i < file_count; i++)
     {
-        pthread_create(&thread_handles[i], NULL, revert_file, (void *) &original_data[i]); 
-        free(original_data[i].filename); 
-        free(original_data[i].contents); 
+        pthread_create(&thread_handles[i], NULL, revert_file, (void *) &original_data[i]);  
     }
     for (int i = 0; i < file_count; i++)
     {
@@ -102,8 +117,30 @@ void save_original_file(revert_pair * original_data, const char * filename, int 
 
 void * modify_file (void * modify_data)
 {
+    FILE * fptr = fopen(((revert_pair*)modify_data)->filename, "r+"); 
+    
+    int line_counter = 0; 
+    int defer_location; 
+    int return_location; 
+    int end_brace_location; 
+    char buf[512]; 
+
+    while (fgets(buf, sizeof(buf), fptr) != NULL)
+    {
+        
+
+        line_counter += 1; 
+    }
+
+    fseek(fptr, 0L, SEEK_SET); 
+    line_counter = 0; 
+
+    
 
 
+
+
+    fclose(fptr); 
 
     return NULL; 
 }
@@ -192,3 +229,4 @@ int get_file_size(FILE * fptr)
     fseek(fptr, 0L, SEEK_SET); 
     return size; 
 }
+

@@ -11,6 +11,7 @@
 #define COMPILE_FILE "compile.defer"
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
