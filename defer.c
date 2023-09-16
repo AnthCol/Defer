@@ -12,9 +12,9 @@ int main(int argc, char ** argv)
 
 
     temp = realloc(temp, strlen(argv[1]) + 1); 
-    strncpy(temp, argv[1], strlen(argv[1])); 
+    strcpy(temp, argv[1]); 
 
-    for (int i = 0; i < strlen(temp); i++)
+    for (int i = 0; i < (int)strlen(temp); i++)
     {
         temp[i] = toupper(temp[i]); 
     }
@@ -41,6 +41,12 @@ int main(int argc, char ** argv)
                 printf("%sFile does not end with .c -> Skipping it%s (%s)\n", PURPLE, DEFAULT, argv[i]); 
             }
         }
+    }
+
+    if (file_count > MAX_THREADS)
+    {
+        printf("%sFile count is greater than MAX_THREADS (%d). Exiting...%s\n", RED, MAX_THREADS, DEFAULT); 
+        return 0; 
     }
 
     pthread_t * thread_handles; 
@@ -79,6 +85,7 @@ int main(int argc, char ** argv)
     }
     free(temp); 
 
+
     for (int i = 0; i < file_count; i++)
     {
         pthread_create(&thread_handles[i], NULL, revert_file, (void *) &original_data[i]);  
@@ -114,105 +121,151 @@ void save_original_file(revert_pair * original_data, const char * filename, int 
     return; 
 }
 
+int cmp_func(const void * a, const void * b)
+{
+    int val_a = ((locations*)a)->line_number; 
+    int val_b = ((locations*)b)->line_number;  
+
+    return (val_a > val_b) - (val_a < val_b); 
+}
+
 
 void * modify_file (void * modify_data)
 {
     FILE * fptr = fopen(((revert_pair*)modify_data)->filename, "r+"); 
+    int size = get_file_size(fptr); 
+    char * file_data = malloc(size + 1); 
+    fread()
 
     int line_counter = 0;     
-    int defer_counter = 0; 
-    int return_counter = 0; 
-    int start_brace_counter = 0; 
-    int end_brace_counter = 0; 
-
-    int * defer_locations = malloc(1); 
-    int * return_locations = malloc(1); 
-    int * start_brace_locations = malloc(1); 
-    int * end_brace_locations = malloc(1); 
     char buf[512]; 
+
+    int defer_count = 0; 
+    locations * defer_locations = malloc(1); 
 
     while (fgets(buf, sizeof(buf), fptr) != NULL)
     {
         line_counter += 1; 
-        char * pointer; 
         char temp[512]; 
+        char formatted[512]; 
         strcpy(temp, buf); 
-
         strip_whitespace(temp);
 
-        if (strncmp(buf, "return ", sizeof("return")) != 0 || strncmp(buf, "return(", sizeof("return")) != 0)
-        {   
-            return_counter += 1; 
-            return_locations = realloc(return_locations, sizeof(int) * return_counter); 
-            return_locations[return_counter - 1] = line_counter; 
-        }
-        else if (strncmp(temp, "defer(", sizeof("defer")) != 0)
+       
+        if (strncmp(temp, "defer(", sizeof("defer")) == 0)
         {
-            defer_counter += 1;  
-            defer_locations = realloc(defer_locations, sizeof(int) * defer_counter); 
-            defer_locations[defer_counter - 1] = line_counter; 
-        }
-        else if (strstr(temp, "}") != NULL)
-        { 
-            end_brace_counter += 1;  
+            // save line
+            strcpy(formatted, temp); 
+
+
+            // wipe line in file. 
+
+
+
+            int end_location = line_counter; 
+            int brace_counter = 0; 
+            int ending_location; 
+
+            while (brace_counter >= 0)
+            {
+                fgets(buf, sizeof(buf), fptr); 
+                end_location += 1; 
+
+                for (int i = 0; i < strlen(buf); i++)
+                {
+                    if (buf[i] == '{')
+                    {
+                        brace_counter += 1; 
+                    }
+                    else if (buf[i] == '}')
+                    {
+                        brace_counter -= 1; 
+                    }
+                }
+            }
+
+            /*
+                FORMAT TEMP INSTRUCTION
+            */
+
+            int found_index = -1; 
+
+            for (int i = 0; i < defer_count; i++)
+            {
+                if(defer_locations[i].line_number == end_location)
+                {
+                    found_index = i; 
+                    break; 
+                }
+            }
+
+            if (found_index == -1)
+            {
+                defer_count += 1; 
+                defer_locations = realloc(defer_locations, sizeof(location) * defer_count); 
+                defer_locations[defer_count - 1].instructions = malloc(strlen(formatted) + 1); 
+                defer_locations[defer_count - 1].line_number = end_location; 
+                
+                strcpy(defer_locations[defer_count - 1].instructions, formatted); 
+            }
+            else
+            {
+                defer_locations[found_index].instructions = realloc(defer_locations[found_index].instructions, strlen(defer_locations[found_index].instructions) + strlen(formatted) + 1); 
+                strcat(defer_locations[found_index].instructions, formatted); 
+            }
 
         }
-        else if (strstr(temp, "{") != NULL)
-        {            
-            start_brace_counter += 1; 
-
+    
+        // Set file back to where we started at
+        fseek(fptr, 0L, SEEK_SET); 
+        int temp_counter = 0; 
+        while (line_counter != temp_counter)
+        {
+            fgets(buf, sizeof(buf), fptr); 
         }
-        //line_counter += 1; 
     }
 
+    // Sort structs by their ending locations 
+    qsort(defer_locations, defer_count, sizeof(locations), cmpfunc); 
 
+    fseek(fptr, 0L, SEEK_SET); 
+    line_counter = 0; 
 
-    qsort(defer_locations, defer_counter, sizeof(int), cmp_func); 
-    qsort(return_locations, return_counter, sizeof(int), cmp_func); 
-    qsort(start_brace_locations, start_brace_counter, sizeof(int), cmp_func); 
-    qsort(end_brace_locations, end_brace_counter, sizeof(int), cmp_func); 
-
-
-    if (start_brace_counter != end_brace_counter)
+    for (int i = 0; i < defer_count; i++)
     {
-        printf("%sFile does not have matching number of opening and closing braces (%s)%s\n", RED, (revert_pair*)modify_data->filename, DEFAULT); 
-        free(defer_locations); 
-        free(return_locations); 
-        free(start_brace_locations); 
-        free(end_brace_locations); 
-        return NULL; 
-    }
-    
-    for (int i = 0; i < start_brace_counter; i++)
-    {
-        int location = binary_search(end_brace_locations, start_brace_counter, start_brace_locations[i]);
-
-        if (location != -1)
+        while (line_counter != defer_locations[i].line_number)
         {
-            // FIXME get rid of it 
+            fgets(buf, sizeof(buf), fptr); 
+            line_counter += 1; 
         }
-    } 
-    
-    //fseek(fptr, 0L, SEEK_SET); 
+        
 
 
-    /*
-        Find the closest scope ending statement for each defer location. 
-        Remove defer from the line (leaving only a newline). 
 
-        DEFER MUST BE ON IT'S OWN LINE, AS THE ENTIRE LINE WILL BE DELETED. 
-
-        After, the code will prepend the 
-    */
-
-
+        free(defer_locations[i].instructions); 
+    }
+    free(defer_locations); 
     fclose(fptr); 
 
-    free(defer_locations); 
-    free(return_locations); 
-    free(end_brace_locations); 
-
     return NULL; 
+}
+
+
+void count_braces(int * brace_counter, const char * line)
+{
+    for (int i = 0; i < strlen(line); i++)
+    {
+        if (line[i] == '{')
+        {
+            *brace_counter += 1; 
+        }
+        else if (line[i] == '}')
+        {
+            *brace_counter -= 1; 
+        }
+    }
+
+    return; 
 }
 
 void strip_whitespace(char * string)
@@ -220,7 +273,7 @@ void strip_whitespace(char * string)
     char * temp = malloc(strlen(string)); 
 
     int x = 0; 
-    for (int i = 0; i < strlen(string); i++)
+    for (int i = 0; i < (int)strlen(string); i++)
     {
         if (!isspace(string[i]))
         {
@@ -233,11 +286,6 @@ void strip_whitespace(char * string)
     strcpy(string, temp); 
 
     return; 
-}
-
-int cmp_func(const void * a, const void * b)
-{
-    return ((*(int*)a) > (*(int*)b)) - ((*(int*)a) < (*(int*)b)); 
 }
 
 void * revert_file (void * revert_data)
@@ -266,7 +314,6 @@ int already_processed(revert_pair * original_data, const char * filename, int fi
 
 void copy_file_data(FILE * fptr, const char * filename, revert_pair * original_data, int index)
 {
-
     int name_len = strlen(filename); 
     int file_len = get_file_size(fptr); 
 
@@ -283,8 +330,8 @@ void copy_file_data(FILE * fptr, const char * filename, revert_pair * original_d
     char * buffer = malloc(file_len + 1); 
     fread(buffer, sizeof(char), file_len, fptr); 
 
-    strncpy(original_data[index].filename, filename, name_len); 
-    strncpy(original_data[index].contents, buffer, file_len);
+    strcpy(original_data[index].filename, filename); 
+    strcpy(original_data[index].contents, buffer);
 
     free(buffer); 
     return; 
@@ -293,7 +340,6 @@ void copy_file_data(FILE * fptr, const char * filename, revert_pair * original_d
 
 int ends_with(const char * string, const char * end)
 {
-
    int len = strlen(string) - 1;  
    int end_len = strlen(end) - 1; 
 
@@ -301,7 +347,6 @@ int ends_with(const char * string, const char * end)
     {
         return 0; 
     }
-
 
     while (end_len >= 0)
     {

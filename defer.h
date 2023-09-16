@@ -22,10 +22,18 @@ typedef struct revert_pair
     char * contents;  
 } revert_pair; 
 
+typedef struct locations
+{
+    char * instructions; 
+    int line_number; 
+} locations; 
+
+
 int ends_with(const char *, const char *); 
 int already_processed(revert_pair *, const char *, int); 
 int get_file_size(FILE *); 
 int cmp_func(const void *, const void *); 
+void count_braces(int *, const char *); 
 void strip_whitespace(char *); 
 void save_original_file(revert_pair *, const char *, int *); 
 void copy_file_data(FILE *, const char *, revert_pair *, int); 
