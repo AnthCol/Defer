@@ -33,6 +33,7 @@ int ends_with(const char *, const char *);
 int already_processed(revert_pair *, const char *, int); 
 int get_file_size(FILE *); 
 int cmp_func(const void *, const void *); 
+void generate_instruction(char *); 
 void count_braces(int *, const char *); 
 void strip_whitespace(char *); 
 void save_original_file(revert_pair *, const char *, int *); 
