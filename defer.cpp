@@ -3,7 +3,7 @@
 int main(int argc, char ** argv)
 {
 
-    flag_container flags; 
+    flag_container flags = {false, false, false, false};
     std::vector<std::string> c_files; 
     
     determine_flags(flags, argc, argv); 
@@ -24,14 +24,13 @@ int main(int argc, char ** argv)
     if (flags.recursive)
         recursive_get_c_files(c_files); 
     else
-        get_c_files(c_files, argc, argv); 
+        get_c_files(c_files, argc, argv);    
 
-    
 
     pthread_t * thread_handles = new pthread_t[c_files.size()]; 
 
     for (int i = 0; i < (int)c_files.size(); i++)
-        pthread_create(&thread_handles[i], NULL, (flags.backwards) ? backwards : forwards, &c_files[i]); 
+        pthread_create(&thread_handles[i], NULL, (flags.backwards) ? backwards : forwards, (void *) &c_files[i]); 
  
     for (int i = 0; i < (int)c_files.size(); i++)
         pthread_join(thread_handles[i], NULL); 
@@ -46,7 +45,18 @@ void * forwards(void * data)
 {
     std::string * file = static_cast<std::string *>(data); 
 
+    std::ifstream fptr (*file); 
+    std::string s; 
 
+    while (getline(fptr, s))
+    {
+        std::stringstream ss(s);
+        std::string token; 
+
+        
+
+
+    }
 
     return NULL; 
 }
@@ -54,8 +64,15 @@ void * forwards(void * data)
 void * backwards(void * data)
 {
     std::string * file = static_cast<std::string *>(data); 
+ 
+    std::ifstream fptr (*file); 
+    std::string s; 
+
+    while (getline(fptr, s))
+    {
 
 
+    }
 
     return NULL; 
 }
@@ -70,13 +87,13 @@ void determine_flags(flag_container& flags, int argc, char ** argv)
 
 void set_flag(flag_container& flags, std::string arg)
 {  
-    if (arg == "-help" || arg == "-h")
+    if (arg == "-help" || arg == "-h" || arg == "-H")
         flags.help = true; 
-    else if (arg == "-r")
+    else if (arg == "-r" || arg == "-R")
         flags.recursive = true; 
-    else if (arg == "-b")
+    else if (arg == "-b" || arg == "-B")
         flags.backwards = true; 
-    else if (arg == "-v")
+    else if (arg == "-v" || arg == "-V")
         flags.version = true; 
     return; 
 }
@@ -103,6 +120,7 @@ bool ends_with(std::string text, std::string suffix)
 {
     int i = suffix.length(); 
     int j = text.length(); 
+
     while (i >= 0)
         if (suffix[i--] != text[j--])
             return false; 
@@ -111,13 +129,17 @@ bool ends_with(std::string text, std::string suffix)
 
 void print_help()
 {
-    std::string help_info = "\n Defer Help Menu\n"; 
-    help_info += "[ Flags ]\n"; 
-    help_info += "-r    =>  Will recursively search and use all C files from current and all sub-directories\n"; 
-    help_info += "-b    =>  Will revert files that have previously gone through this program back into normal C code\n"; 
-    help_info += "-v    =>  Will print the version number of the program\n"; 
-    help_info += "-h    =>  Will print this help menu\n"; 
-    help_info += "-help =>  Will print this help menu\n";
+    std::string help_info = "\nDEFER HELP MENU\n\n"; 
+    help_info += "[ Flags ]\n\n"; 
+    help_info += "-r     =>  Will recursively search and use all C files from current and all sub-directories\n";  
+    help_info += "-R     =>  Will recursively search and use all C files from current and all sub-directories\n\n"; 
+    help_info += "-b     =>  Will revert files that have previously gone through this program back into normal C code\n"; 
+    help_info += "-B     =>  Will revert files that have previously gone through this program back into normal C code\n\n"; 
+    help_info += "-v     =>  Will print the version number of the program\n"; 
+    help_info += "-V     =>  Will print the version number of the program\n\n"; 
+    help_info += "-h     =>  Will print this help menu\n"; 
+    help_info += "-H     =>  Will print this help menu\n"; 
+    help_info += "-help  =>  Will print this help menu\n";
     std::cout << help_info << std::endl; 
     return; 
 }
@@ -125,7 +147,7 @@ void print_help()
 void print_version()
 {
     std::cout << "Defer version 1.0\n"; 
-    std::cout << "Written by Anthony Colaiacovo, 2023" << std::endl; 
+    std::cout << "Written by Anthony Colaiacovo in 2023" << std::endl; 
     return; 
 }
 

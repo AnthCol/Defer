@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include <fstream>
 #include <utility>
 #include <iostream>
@@ -19,6 +20,14 @@ typedef struct flag_container
     bool version; 
 } flag_container; 
 
+typedef struct scope_data
+{
+    int line_begin; 
+    int line_end; 
+    bool has_return; 
+} scope_data; 
+
+
 void * forwards(void *); 
 void * backwards(void *); 
 void get_c_files(std::vector<std::string>&, int, char **); 
@@ -30,3 +39,4 @@ void print_version();
 bool ends_with(std::string, std::string); 
 
 #endif
+
