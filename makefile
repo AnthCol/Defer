@@ -1,7 +1,10 @@
+CC = g++
+CFLAGS = -Wall -Wextra -std=c++17 -O2
+
 all: compile
 
 compile:
-	gcc -Wall -Wextra -std=c99 -O2 defer.c -o defer
+	$(CC) $(CFLAGS) defer.cpp -o defer
 
 clean:
 	rm defer

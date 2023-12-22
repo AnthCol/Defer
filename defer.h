@@ -1,44 +1,32 @@
-#ifndef DEFER_H 
-#define DEFER_H
-
-#define _GNU_SOURCE
+#ifndef _DEFER_H
+#define _DEFER_H
 #define _POSIX_C_SOURCE 200809L
-#define MAX_THREADS 64
-#define RED "\033[31m"
-#define PURPLE "\033[35m"
-#define DEFAULT "\033[39m"
-#define SEARCH_COMMAND "find . -type f -name '*.c'"
-#define COMPILE_FILE "compile.defer"
 
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+
+#include <string>
+#include <vector>
+#include <fstream>
+#include <utility>
+#include <iostream>
 #include <pthread.h>
+#include <filesystem>
 
-typedef struct revert_pair
-{ 
-    char * filename; 
-    char * contents;  
-} revert_pair; 
-
-typedef struct locations
+typedef struct flag_container 
 {
-    char * instructions; 
-    int line_number; 
-} locations; 
+    bool recursive; 
+    bool backwards; 
+    bool help; 
+    bool version; 
+} flag_container; 
 
-
-int ends_with(const char *, const char *); 
-int already_processed(revert_pair *, const char *, int); 
-int get_file_size(FILE *); 
-int cmp_func(const void *, const void *); 
-void generate_instruction(char *); 
-void count_braces(int *, const char *); 
-void strip_whitespace(char *); 
-void save_original_file(revert_pair *, const char *, int *); 
-void copy_file_data(FILE *, const char *, revert_pair *, int); 
-void * modify_file(void *); 
-void * revert_file(void *); 
+void * forwards(void *); 
+void * backwards(void *); 
+void get_c_files(std::vector<std::string>&, int, char **); 
+void recursive_get_c_files(std::vector<std::string>&); 
+void set_flag(flag_container&, std::string); 
+void determine_flags(flag_container&, int, char **); 
+void print_help(); 
+void print_version(); 
+bool ends_with(std::string, std::string); 
 
 #endif
