@@ -44,39 +44,121 @@ int main(int argc, char ** argv)
 void * forwards(void * data)
 {
     std::string * file = static_cast<std::string *>(data); 
-
-    std::ifstream fptr (*file); 
-    std::string s; 
-
-    while (getline(fptr, s))
+    std::fstream fptr (*file, std::ios::in); 
+    std::vector<std::string> file_data = read_file(fptr);  
+    fptr.close(); 
+    
+    if (uneven_braces(file_data))
     {
-        std::stringstream ss(s);
-        std::string token; 
-
-        
-
-
+        std::cout << "File named: " << *file << " cannot be processed. Unequal brace {} count\n"; 
+        return NULL; 
     }
+
+    
+    modify_file_info(file_data); 
+
+    std::cout << "PRINTING FILE DATA: " << std::endl; 
+
+
+    for (std::string s : file_data)
+        std::cout << s << std::endl; 
+
+
+    /*
+    fptr.open(*file, std::ios::out); 
+    write_to_file(file_data, fptr); 
+    */
 
     return NULL; 
 }
 
 void * backwards(void * data)
 {
-    std::string * file = static_cast<std::string *>(data); 
- 
-    std::ifstream fptr (*file); 
-    std::string s; 
+    std::string * file = static_cast<std::string *>(data);  
+    std::fstream fptr (*file, std::ios::in); 
+    std::vector<std::string> file_data = read_file(fptr); 
+    fptr.close(); 
 
-    while (getline(fptr, s))
-    {
-
-
-    }
+    /*
+    revert_file_info(file_data); 
+    fptr.open(*file, std::ios::out); 
+    write_to_file(file_data, fptr); 
+    */
 
     return NULL; 
 }
 
+void modify_file_info(std::vector<std::string>& file_data)
+{
+    std::string prefix = "#defer"; 
+    std::string instruction; 
+
+    for (int i = file_data.size() - 1; i >= 0; i--)
+        if (starts_with(file_data[i], prefix))
+            defer(file_data, i); 
+
+    return; 
+}
+
+bool starts_with(std::string& text, std::string& prefix)
+{
+    std::string temp = text; 
+    temp.erase(0, temp.find_first_not_of(" \t")); 
+    return(temp.compare(0, prefix.length(), prefix) == 0); 
+}
+
+
+void defer(std::vector<std::string>&file_data, int index)
+{
+    std::string instruction = file_data[index].substr(file_data[index].find(" ") + 1); 
+    instruction.erase(0, instruction.find_first_not_of(" \t")); 
+    instruction.erase(0, instruction.find("#defer") + std::string("#defer").length()); 
+    instruction.erase(0, instruction.find_first_not_of(" \t")); 
+
+ 
+    file_data[index] = "//" + file_data[index]; 
+    return; 
+}
+
+void revert()
+{
+    return; 
+}
+
+void revert_file_info(std::vector<std::string>& file_data)
+{
+
+}
+
+
+void write_to_file(std::vector<std::string>& file_data, std::fstream& fptr)
+{ 
+    fptr << std::accumulate(file_data.begin(), file_data.end(), std::string("")); 
+    return; 
+}
+
+
+
+std::vector<std::string> read_file(std::fstream& fptr)
+{
+    std::vector<std::string> file_data; 
+    std::string s; 
+    while (getline(fptr, s))
+        file_data.push_back(s); 
+    return file_data; 
+}
+
+bool uneven_braces(std::vector<std::string>& file_data)
+{
+    int brace_count = 0;
+    for (std::string s : file_data)
+        for (char c : s)
+            if (c == '{')
+                brace_count += 1;
+            else if (c == '}')
+                brace_count -= 1; 
+    return (brace_count != 0);  
+}
 
 void determine_flags(flag_container& flags, int argc, char ** argv)
 {
@@ -118,9 +200,8 @@ void get_c_files(std::vector<std::string>& c_files, int argc, char ** argv)
 
 bool ends_with(std::string text, std::string suffix)
 {
-    int i = suffix.length(); 
-    int j = text.length(); 
-
+    int i = suffix.length() - 1; 
+    int j = text.length() - 1; 
     while (i >= 0)
         if (suffix[i--] != text[j--])
             return false; 
